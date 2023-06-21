@@ -115,7 +115,7 @@ public:
     }
     void update_vel_acc(double dt,  double Fx, double Fy)
     {
-        if(this->type=="F" || this->type=="A" || this->type=="B"){
+        if(this->type!="W"){
             this->F_x = Fx;
             this->F_y = Fy;
             //double tmp_vel = sqrt(this->vx*this->vx + this->vy*this->vy);
@@ -126,9 +126,6 @@ public:
             this->a_x = new_acc_x;
             this->a_y = new_acc_y;
             this->compute_k_energy();
-        }
-        else if(type=="W"){
-            this->k_en = 0.5 * this->m * (this->vel_walls_y * this->vel_walls_y);
         }
 
         //double new_vel = sqrt(this->vx*this->vx + this->vy*this->vy);

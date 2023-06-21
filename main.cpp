@@ -11,7 +11,7 @@
 #include <omp.h>
 #include <map>
 #include <random>
-#define ITER_PLOT 10
+#define ITER_PLOT 5
 using namespace std;
 namespace plt = matplotlibcpp;
 
@@ -33,12 +33,9 @@ struct PairHash {
     }
 };
 
-
-
-
 int main(int argc, char *argv[]) {
     //plt::detail::_interpreter::kill();
-    int test =1; // 0 = no walls, just fluid, 1 = walls & chain molecules, 2 = fixed walls & ring molecules
+    int test =2; // 0 = no walls, just fluid, 1 = walls & chain molecules, 2 = fixed walls & ring molecules
     assert(test<3 && test>=0);
     double body_force =0.3;
     double L = 15;
@@ -168,6 +165,7 @@ int main(int argc, char *argv[]) {
 
     std::vector<double> tot_energy_list;
     std::vector<double> temperatures;
+    std::vector<double> temp_expected;
     std::vector<double> momentum_list;
     map <pair<string , string>, double> a_coeff;
     if(test ==0){
@@ -324,7 +322,7 @@ int main(int argc, char *argv[]) {
 
 
     double T = 0.0;
-    double T_dpd_thermostat = (sigma *sigma)/(2.0*gamma);
+    const double T_dpd_thermostat = (sigma *sigma)/(2.0*gamma);
     cout << "T_dpd_thermostat: " << T_dpd_thermostat << endl;
     int iter = -1;
 
@@ -511,38 +509,39 @@ int main(int argc, char *argv[]) {
         int counter_A =0;
         int counter_B =0;
 
-        for (int i = 0; i < (int)particle_list.size(); i++) {
+        for (auto & i : particle_list) {
             //cout<<"particle type "<<particle_list[i].type<<endl;
-            if(particle_list[i].type =="F"){
+            if(i.type =="F"){
 
-                x_array_fluid[counter_fluid] = particle_list[i].x;
-                y_array_fluid[counter_fluid] = particle_list[i].y;
+                x_array_fluid[counter_fluid] = i.x;
+                y_array_fluid[counter_fluid] = i.y;
                 counter_fluid++;
-            }else if(particle_list[i].type =="W"){
-                x_array_walls[counter_wall] = particle_list[i].x;
-                y_array_walls[counter_wall] = particle_list[i].y;
+            }else if(i.type =="W"){
+                x_array_walls[counter_wall] = i.x;
+                y_array_walls[counter_wall] = i.y;
                 counter_wall++;
-            }else if (particle_list[i].type =="A"){
-                x_array_A[counter_A] = particle_list[i].x;
-                y_array_A[counter_A] = particle_list[i].y;
+            }else if (i.type =="A"){
+                x_array_A[counter_A] = i.x;
+                y_array_A[counter_A] = i.y;
                 counter_A++;
-            }else if (particle_list[i].type =="B"){
-                x_array_B[counter_B] = particle_list[i].x;
-                y_array_B[counter_B] = particle_list[i].y;
+            }else if (i.type =="B"){
+                x_array_B[counter_B] = i.x;
+                y_array_B[counter_B] = i.y;
                 counter_B++;
             }
 
 
-            kinetic_energy += particle_list[i].k_en;
+            kinetic_energy += i.k_en;
 
-            sum_vx += particle_list[i].vx;
-            sum_vy += particle_list[i].vy;
+            sum_vx += i.vx;
+            sum_vy += i.vy;
 
         }
 
         kinetic_energy_list.push_back(kinetic_energy);
-        T = 2.0 * kinetic_energy / (3.0 * (double)N);
+        T = 2.0 * kinetic_energy / (3.0 * ((double)particle_list.size()) );
         temperatures.push_back(T);
+        temp_expected.push_back(T_dpd_thermostat);
 
         momentum = sqrt(sum_vx * sum_vx + sum_vy * sum_vy) * m;
         momentum_list.push_back(momentum);
@@ -550,7 +549,7 @@ int main(int argc, char *argv[]) {
         if(verbose){cout<<"iter: "<< iter<<endl;}
 
         if (iter % ITER_PLOT == 0) {
-
+            cout<<" Temperature: "<<T<<endl;
 
             //plt::clf();
             if(test==0){
@@ -564,6 +563,7 @@ int main(int argc, char *argv[]) {
                 plt::subplot(3, 1, 2);
 
                 plt::named_plot("temperature", temperatures, "r");
+                plt::named_plot("expected temp", temp_expected, "b");
                 if (iter == 0) { plt::legend({{"loc", "upper right"}}); }
                 plt::grid(true);
                 plt::xlabel("Iterations");

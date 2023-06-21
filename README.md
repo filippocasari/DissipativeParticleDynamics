@@ -17,3 +17,6 @@ where delta_t is a double (seconds)
 
 ### Ex c)
 ![alt text](images/ex_c.png "test C")
+
+
+__NOTE__: sometimes, the program does not run properly because matplotlibcpp is not maintained anymore, and crashes. However, if this happened, try sever times. 
