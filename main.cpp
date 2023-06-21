@@ -11,10 +11,21 @@
 #include <omp.h>
 #include <map>
 #include <random>
+#include <csignal>
 #define ITER_PLOT 5
 using namespace std;
 namespace plt = matplotlibcpp;
+bool interrupted = false;
+bool Exit = false;
 
+void handleInterrupt(int signal) {
+    std::cout << "Interrupt signal received. Exiting loop..." << std::endl;
+    interrupted = true;
+}
+void handleTermination(int signal) {
+    std::cout << "Termination signal received. Exiting..." << std::endl;
+    Exit = true;
+}
 
 double compute_init_kinetic_energy(const std::vector<Particle> &particles) {
     double kinetic_energy = 0.0;
@@ -34,6 +45,12 @@ struct PairHash {
 };
 
 int main(int argc, char *argv[]) {
+    if(argv[1] == nullptr){
+        cerr<<"Not enough arguments"<<endl;
+        return -1;
+    }
+    std::signal(SIGINT, handleInterrupt);
+    std::signal(SIGTERM, handleTermination);
     //plt::detail::_interpreter::kill();
     int test =2; // 0 = no walls, just fluid, 1 = walls & chain molecules, 2 = fixed walls & ring molecules
     assert(test<3 && test>=0);
@@ -147,10 +164,7 @@ int main(int argc, char *argv[]) {
         }
 
     }
-    if(argv[1] == nullptr){
-        cerr<<"Not enough arguments"<<endl;
-        return -1;
-    }
+
 
     printf("Assignment 4\n");
     cout << "Arguments to pass: dt" << endl;
@@ -343,7 +357,7 @@ int main(int argc, char *argv[]) {
     cout<<"xi_map size: "<< xi_map.size()<<endl;
     //plt::clf();
     plt::figure();
-    //plt::backend("TkAgg");
+    plt::backend("TkAgg");
     plt::ion();
 
     plt::figure_size(800, 750);
@@ -351,8 +365,8 @@ int main(int argc, char *argv[]) {
 
 
 
-    while (iter < 20000) {
-        //cout<<"starting the loop"<<endl;
+    while (iter < 10000 && !interrupted && !Exit) {
+
         iter++;
 
 
@@ -618,7 +632,7 @@ int main(int argc, char *argv[]) {
 
     cout <<endl<<"Execution time: " << (double)duration.count() / 1000000.0 << " seconds" << endl;
 
-    plt::detail::_interpreter::kill();
+
 
     cout << "AS4 completed" << endl;
     return 0;
