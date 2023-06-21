@@ -7,12 +7,10 @@
 #include <vector>
 #include "Particle.h"
 #include <unordered_set>
-#include <csignal>
 #include "matplotlib-cpp/matplotlibcpp.h"
 #include <omp.h>
 #include <map>
 #include <random>
-// TODO : fix bond. Per each particles in the molecule, find the bond molecules.
 using namespace std;
 namespace plt = matplotlibcpp;
 
@@ -39,22 +37,66 @@ struct PairHash {
 
 int main(int argc, char *argv[]) {
     //plt::detail::_interpreter::kill();
-    int test =1;
+    int test =0;
+    double body_force =0.3;
     double L = 15;
     double rc = 1.0;
     int ro = 4;
     double sigma = 1.0;
     double KS =100;
-    double RS = 0.1;
+    double RS;
+    if(test==1){
+        RS = 0.1;
+    }else{
+        RS = 0.3;
+    }
+
     double gamma = 4.5;
     int N = ro * (int )L *(int) L;
     double m = 1.0;
 
     auto dt = static_cast<double>(std::strtod(argv[1], nullptr));
     std::vector<Particle> particle_list(N);
-    std::vector<int> chain_list(42*7);
 
 
+    if(test==2){
+        particle_list.resize(N+10*9);
+
+        double lower_bound = 1;
+        double upper_bound = L-2;
+        std::uniform_real_distribution<double> unif_chain(lower_bound,upper_bound);
+        std::default_random_engine re_chain;
+
+        int num_particles_in_molecules = 1000; //because 900 molecules of fluid and of walls
+        for(int i=0; i<10; i++){
+            double center_x = unif_chain(re_chain);
+            double center_y = unif_chain(re_chain);
+            assert(center_x>=0 && center_x<=L-1);
+            assert(center_y>=0 && center_y<=L-1);
+            cout<< "center "<<center_x<<" "<<center_y<<endl;
+            double delta_angle = 2*M_PI/9;
+            for(int a=0; a<9;a++){
+                double x = center_x + 1.0/ro * cos(a*delta_angle);
+                double y = center_y + 1.0/ro * sin(a*delta_angle);
+                int xcell = static_cast<int>( x / rc);
+                int ycell = static_cast<int>( y / rc);
+                cout<<"chain "<<i<<" particle type= "<<"A, "<<xcell<<" "<<ycell<<endl;
+                Particle p;
+                if(a==0){
+                    p= Particle(x,y,0,0,1,L,xcell,ycell,num_particles_in_molecules+a,"A", test, num_particles_in_molecules+8, num_particles_in_molecules+a+1, i);
+                }else if(a==8){
+                    p = Particle(x,y,0,0,1,L,xcell,ycell,num_particles_in_molecules+a,"A", test, num_particles_in_molecules+a-1, num_particles_in_molecules, i);
+                }else{
+                    p = Particle(x,y,0,0,1,L,xcell,ycell,num_particles_in_molecules+a,"A", test, num_particles_in_molecules+a-1, num_particles_in_molecules+a+1, i);
+                }
+                particle_list[N+a+i*9] = p;
+            }
+            num_particles_in_molecules+=9;
+
+
+
+            }
+    }
 
 
     if(test==1){
@@ -78,12 +120,12 @@ int main(int argc, char *argv[]) {
                 cout<<"chain "<<i<<" particle type= "<<"A, "<<xcell<<" "<<ycell<<endl;
                 Particle p;
                 if(a==0){
-                    p= Particle(center_x+double(a)*1/ro,center_y,0,0,1,L,xcell,ycell,num_particles_in_molecules+a,"A", test, -1, num_particles_in_molecules+a+1, i);
+                    p= Particle(center_x+double(a)*1.0/ro,center_y,0,0,1,L,xcell,ycell,num_particles_in_molecules+a,"A", test, -1, num_particles_in_molecules+a+1, i);
                 }else{
-                    p = Particle(center_x+double(a)*1/ro,center_y,0,0,1,L,xcell,ycell,num_particles_in_molecules+a,"A", test, num_particles_in_molecules+a-1, num_particles_in_molecules+a+1, i);
+                    p = Particle(center_x+double(a)*1.0/ro,center_y,0,0,1,L,xcell,ycell,num_particles_in_molecules+a,"A", test, num_particles_in_molecules+a-1, num_particles_in_molecules+a+1, i);
                 }
 
-                chain_list[num_particles_in_molecules+a] = p.id;
+
                 particle_list[N+a+i*7] = p;
             }
 
@@ -93,13 +135,11 @@ int main(int argc, char *argv[]) {
                 cout<<"chain "<<i<<" particle type= "<<"B, "<<xcell<<" "<<ycell<<endl;
                 Particle p;
                 if(b ==6){
-                    p = Particle(center_x+double(b)*1/ro,center_y,0,0,1,L,xcell,ycell,num_particles_in_molecules+b,"B", test, num_particles_in_molecules+b-1,-1,i);
+                    p = Particle(center_x+double(b)*1.0/ro,center_y,0,0,1,L,xcell,ycell,num_particles_in_molecules+b,"B", test, num_particles_in_molecules+b-1,-1,i);
                 }else{
-                    p = Particle(center_x+double(b)*1/ro,center_y,0,0,1,L,xcell,ycell,num_particles_in_molecules+b,"B", test, num_particles_in_molecules+b-1,num_particles_in_molecules+b+1,i);
+                    p = Particle(center_x+double(b)*1.0/ro,center_y,0,0,1,L,xcell,ycell,num_particles_in_molecules+b,"B", test, num_particles_in_molecules+b-1,num_particles_in_molecules+b+1,i);
                 }
 
-
-                chain_list[num_particles_in_molecules+b] = p.id;
                 particle_list[N+b+i*7] = p;
             }
             num_particles_in_molecules+=7;
@@ -127,8 +167,16 @@ int main(int argc, char *argv[]) {
     std::vector<double> tot_energy_list;
     std::vector<double> temperatures;
     std::vector<double> momentum_list;
+    map <pair<string , string>, double> a_coeff;
+    if(test ==0){
+        a_coeff ={{{"F", "F"}, 25}};
+    }
+    if(test==1){
+        a_coeff = {{{"A", "A"}, 50},{{"A", "B"}, 25}, {{"A", "F"}, 25}, {{"A", "W"}, 200}, {{"B", "A"}, 25}, {{"B", "B"}, 1}, {{"B", "F"}, 300}, {{"B", "W"}, 200},{ {"F", "A"}, 25}, { {"F", "B"}, 300}, { {"F", "F"}, 25}, { {"F", "W"}, 200}, { {"W", "A"}, 200}, { {"W", "B"}, 200} , { {"W", "F"}, 200}, { {"W", "W"}, 0}};
+    }else{
+        a_coeff = {{{"A", "A"}, 50}, {{"A", "F"}, 25}, {{"A", "W"}, 200}, {{"F", "A"}, 25}, {{"F", "F"}, 25}, {{"F", "W"}, 200}, {{"W", "A"}, 200}, {{"W", "F"}, 200}, {{"W", "W"}, 0} };
+    }
 
-    map <pair<string , string>, double> a_coeff = {{{"A", "A"}, 50},{{"A", "B"}, 25}, {{"A", "F"}, 25}, {{"A", "W"}, 200}, {{"B", "A"}, 25}, {{"B", "B"}, 1}, {{"B", "F"}, 300}, {{"B", "W"}, 200},{ {"F", "A"}, 25}, { {"F", "B"}, 300}, { {"F", "F"}, 25}, { {"F", "W"}, 200}, { {"W", "A"}, 200}, { {"W", "B"}, 200} , { {"W", "F"}, 200}, { {"W", "W"}, 0}};
 
 
     cout << "dt: " << dt << endl;
@@ -217,10 +265,20 @@ int main(int argc, char *argv[]) {
     vector<double> y_array_fluid = vector<double>(N_fluid);
     vector<double> x_array_walls = vector<double>(N_walls);
     vector<double> y_array_walls = vector<double>(N_walls);
-    vector<double> x_array_A = vector<double>(42*2);
-    vector<double> y_array_A = vector<double>(42*2);
+    vector<double> x_array_A ;
+    vector<double> y_array_A;
     vector<double> x_array_B = vector<double>(42*5);
     vector<double> y_array_B = vector<double>(42*5);
+    if(test==1){
+        x_array_A= vector<double>(42*2);
+        y_array_A = vector<double>(42*2);
+    }else if(test==2){
+        x_array_A= vector<double>(10*9);
+        y_array_A = vector<double>(10*9);
+    }
+
+
+
 
     for (int i = 0; i < (int) particle_list.size(); i++) {
         if(particle_list[i].type=="F"){
@@ -246,7 +304,10 @@ int main(int argc, char *argv[]) {
     cout<<"check Num particles for Walls "<< x_array_walls.size()<<endl;
     cout<<"check Num particles for Fluid "<< x_array_fluid.size()<<endl;
     cout<<"check Num particles for A "<< x_array_A.size()<<endl;
-    cout<<"check Num particles for B "<< x_array_B.size()<<endl;
+    if(test==1){
+        cout<<"check Num particles for B "<< x_array_B.size()<<endl;
+    }
+
     map<string, string> cmap_walls;
     cmap_walls.insert(make_pair("color", "gray"));
     map<string, string> cmap_A;
@@ -285,7 +346,7 @@ int main(int argc, char *argv[]) {
     //plt::backend("TkAgg");
     plt::ion();
 
-    plt::figure_size(800, 800);
+    plt::figure_size(800, 750);
     plt::title("Particle Methods with dt = "+to_string(dt)+" , T = "+to_string(T));
 
 
@@ -339,6 +400,9 @@ int main(int argc, char *argv[]) {
             int cell_y = part.j;
             double F_tot_x = 0.0;
             double F_tot_y = 0.0;
+            if(test==2){
+                F_tot_y+= body_force;
+            }
 
             double F_x_C;
             double F_y_C ;
@@ -433,19 +497,6 @@ int main(int argc, char *argv[]) {
             }
             part.update_vel_acc(dt, F_tot_x, F_tot_y);
 
-
-            //cout<< "sqrt dt "<<sqrt(dt)<<endl;
-            //cout<<"dt "<<dt<<endl;
-            //cout<< "Forces "<<F_tot_x<<" "<<F_tot_y<<endl;
-            //cout<< "Forces C "<<F_x_C<<" "<<F_y_C<<endl;
-            //cout<< "Forces D "<<F_x_D<<" "<<F_y_D<<endl;
-            //cout<< "Forces R "<<F_x_R<<" "<<F_y_R<<endl;
-            // sleep for 1 sec
-            //this_thread::sleep_for(chrono::seconds(1));
-
-
-
-
         }
 
         double kinetic_energy = 0;
@@ -496,7 +547,7 @@ int main(int argc, char *argv[]) {
         //verbose =true;
         if(verbose){cout<<"iter: "<< iter<<endl;}
 
-        if (iter % 2 == 0) {
+        if (iter % 5 == 0) {
 
 
             //plt::clf();
@@ -509,7 +560,10 @@ int main(int argc, char *argv[]) {
 
             plt::scatter(x_array_walls, y_array_walls, 20,cmap_walls );
             plt::scatter(x_array_A, y_array_A, 20,cmap_A );
-            plt::scatter(x_array_B, y_array_B, 20,cmap_B );
+            if( test ==1){
+                plt::scatter(x_array_B, y_array_B, 20,cmap_B );
+            }
+
             //plt::subplot(2, 2, 2);
             //plt::named_plot("kinetic", kinetic_energy_list, "red");
 

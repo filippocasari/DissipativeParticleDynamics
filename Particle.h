@@ -50,6 +50,10 @@ public:
                 this->type="W";
                 if(this->i==0){
                     this->vel_walls_y = -this->vel_walls_y;
+
+                }
+                if(test == 2){
+                    this->vel_walls_y = 0;
                 }
 
                 this->k_en = 0.5 * this->m * (this->vel_walls_y * this->vel_walls_y);
