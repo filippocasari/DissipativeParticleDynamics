@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <utility>
 class Particle
 {
     // type 0 = fluid, 1=wall
@@ -27,10 +28,12 @@ public:
     int j;
     int id;
     double vel_walls_y =5.0;
-
+    int left_p = -1;
+    int right_p = -1;
+    int bond_id ;
     double k_en=0;
     Particle() = default;
-    Particle(double x, double y, double vx, double vy, double m, double L, int i, int j, int id, int test)
+    Particle(double x, double y, double vx, double vy, double m, double L, int i, int j, int id, std::string type, int test, int left_p=-1, int right_p=-1, int bond_id=-1)
     {
         this->x = x;
         this->y = y;
@@ -40,11 +43,11 @@ public:
         this->L = L;
         this->i = i;
         this->j = j;
-
+        this->type = type;
         this->id = id;
-        if(test==1){
+        if(this->type=="F" && test!=0){
             if(((i ==0) || (i ==L-1))){
-                this->type = "W";
+                this->type="W";
                 if(this->i==0){
                     this->vel_walls_y = -this->vel_walls_y;
                 }
@@ -56,8 +59,20 @@ public:
             }
 
         }
-        else if(test==0){
+        else{
             this->compute_k_energy();
+        }
+        if(this->type=="A" || this->type=="B"){
+            if(left_p!=-1){
+                this->left_p = left_p;
+            }
+            if(right_p!=-1){
+                this->right_p = right_p;
+            }
+            this->bond_id = bond_id;
+        }
+        else{
+            this->bond_id = -1;
         }
 
 
@@ -88,15 +103,15 @@ public:
         this->i = int(this->x / rc);
         this->j = int(this->y / rc);
         if(this->i<0){
-            this->i += (this->L/rc);
+            this->i += int(this->L/rc);
         }
         if(this->j<0){
-            this->j += (this->L/rc);
+            this->j += int(this->L/rc);
         }
     }
     void update_vel_acc(double dt,  double Fx, double Fy)
     {
-        if(this->type=="F"){
+        if(this->type=="F" || this->type=="A" || this->type=="B"){
             this->F_x = Fx;
             this->F_y = Fy;
             //double tmp_vel = sqrt(this->vx*this->vx + this->vy*this->vy);
