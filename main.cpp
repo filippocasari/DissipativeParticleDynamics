@@ -37,7 +37,8 @@ struct PairHash {
 
 int main(int argc, char *argv[]) {
     //plt::detail::_interpreter::kill();
-    int test =0;
+    int test =1; // 0 = no walls, just fluid, 1 = walls & chain molecules, 2 = fixed walls & ring molecules
+    assert(test<3 && test>=0);
     double body_force =0.3;
     double L = 15;
     double rc = 1.0;
@@ -117,7 +118,7 @@ int main(int argc, char *argv[]) {
             for(int a=0; a<2;a++){
                 int xcell = static_cast<int>( center_x+double(a)*1/ro / rc);
                 int ycell = static_cast<int>( center_y / rc);
-                cout<<"chain "<<i<<" particle type= "<<"A, "<<xcell<<" "<<ycell<<endl;
+                //cout<<"chain "<<i<<" particle type= "<<"A, "<<xcell<<" "<<ycell<<endl;
                 Particle p;
                 if(a==0){
                     p= Particle(center_x+double(a)*1.0/ro,center_y,0,0,1,L,xcell,ycell,num_particles_in_molecules+a,"A", test, -1, num_particles_in_molecules+a+1, i);
@@ -132,7 +133,7 @@ int main(int argc, char *argv[]) {
             for(int b =2; b<7;b++){
                 int xcell = static_cast<int>(center_x+double(b)*1/ro / rc);
                 int ycell = static_cast<int>(center_y / rc);
-                cout<<"chain "<<i<<" particle type= "<<"B, "<<xcell<<" "<<ycell<<endl;
+                //cout<<"chain "<<i<<" particle type= "<<"B, "<<xcell<<" "<<ycell<<endl;
                 Particle p;
                 if(b ==6){
                     p = Particle(center_x+double(b)*1.0/ro,center_y,0,0,1,L,xcell,ycell,num_particles_in_molecules+b,"B", test, num_particles_in_molecules+b-1,-1,i);
@@ -254,7 +255,7 @@ int main(int argc, char *argv[]) {
     cout<<"size of cell list: "<<cell_list.size()<<endl;
     cout<<"size particle list "<<particle_list.size()<<endl;
     for (auto &i: particle_list) {
-        cout<<"particle "<<i.id<<" in cell "<<i.i<<", "<<i.j<<endl;
+        //cout<<"particle "<<i.id<<" in cell "<<i.i<<", "<<i.j<<endl;
         cell_list[i.i][i.j].push_back(i);
 
     }
