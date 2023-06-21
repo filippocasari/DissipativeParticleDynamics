@@ -11,6 +11,7 @@
 #include <omp.h>
 #include <map>
 #include <random>
+#define ITER_PLOT 10
 using namespace std;
 namespace plt = matplotlibcpp;
 
@@ -74,14 +75,14 @@ int main(int argc, char *argv[]) {
             double center_y = unif_chain(re_chain);
             assert(center_x>=0 && center_x<=L-1);
             assert(center_y>=0 && center_y<=L-1);
-            cout<< "center "<<center_x<<" "<<center_y<<endl;
+            //cout<< "center "<<center_x<<" "<<center_y<<endl;
             double delta_angle = 2*M_PI/9;
             for(int a=0; a<9;a++){
                 double x = center_x + 1.0/ro * cos(a*delta_angle);
                 double y = center_y + 1.0/ro * sin(a*delta_angle);
                 int xcell = static_cast<int>( x / rc);
                 int ycell = static_cast<int>( y / rc);
-                cout<<"chain "<<i<<" particle type= "<<"A, "<<xcell<<" "<<ycell<<endl;
+                //cout<<"chain "<<i<<" particle type= "<<"A, "<<xcell<<" "<<ycell<<endl;
                 Particle p;
                 if(a==0){
                     p= Particle(x,y,0,0,1,L,xcell,ycell,num_particles_in_molecules+a,"A", test, num_particles_in_molecules+8, num_particles_in_molecules+a+1, i);
@@ -548,39 +549,58 @@ int main(int argc, char *argv[]) {
         //verbose =true;
         if(verbose){cout<<"iter: "<< iter<<endl;}
 
-        if (iter % 5 == 0) {
+        if (iter % ITER_PLOT == 0) {
 
 
             //plt::clf();
-            plt::subplot(2, 1, 1);
-            plt::cla();
-            plt::xlim(0.0, (double) L);
-            plt::ylim(0.0, (double) L);
-            plt::grid(true);
-            plt::scatter(x_array_fluid, y_array_fluid, 20);
+            if(test==0){
+                plt::subplot(3, 1, 1);
+                plt::cla();
+                plt::xlim(0.0, (double) L);
+                plt::ylim(0.0, (double) L);
+                plt::grid(true);
+                plt::scatter(x_array_fluid, y_array_fluid, 20);
 
-            plt::scatter(x_array_walls, y_array_walls, 20,cmap_walls );
-            plt::scatter(x_array_A, y_array_A, 20,cmap_A );
-            if( test ==1){
-                plt::scatter(x_array_B, y_array_B, 20,cmap_B );
+                plt::subplot(3, 1, 2);
+
+                plt::named_plot("temperature", temperatures, "r");
+                if (iter == 0) { plt::legend({{"loc", "upper right"}}); }
+                plt::grid(true);
+                plt::xlabel("Iterations");
+                plt::subplot(3, 1, 3);
+                plt::named_plot("momentum", momentum_list, "blue");
+                if (iter == 0) { plt::legend({{"loc", "upper right"}}); }
+                plt::grid(true);
+            }else{
+                plt::subplot(2, 1, 1);
+                plt::cla();
+                plt::xlim(0.0, (double) L);
+                plt::ylim(0.0, (double) L);
+                plt::grid(true);
+                plt::scatter(x_array_fluid, y_array_fluid, 20);
+
+                plt::scatter(x_array_walls, y_array_walls, 20,cmap_walls );
+                plt::scatter(x_array_A, y_array_A, 20,cmap_A );
+                if( test ==1){
+                    plt::scatter(x_array_B, y_array_B, 20,cmap_B );
+                }
+                plt::subplot(2, 1, 2);
+
+                plt::named_plot("temperature", temperatures, "r");
+                if (iter == 0) { plt::legend({{"loc", "upper right"}}); }
+                plt::grid(true);
+                plt::xlabel("Iterations");
             }
 
             //plt::subplot(2, 2, 2);
             //plt::named_plot("kinetic", kinetic_energy_list, "red");
 
-
             //plt::xlabel("Iterations");
-            //if (iter == 0) { plt::legend({{"loc", "upper right"}}); }
+            //
             //plt::grid(true);
-            plt::subplot(2, 1, 2);
 
-            plt::named_plot("temperature", temperatures, "r");
-            if (iter == 0) { plt::legend({{"loc", "upper right"}}); }
-            plt::grid(true);
-            plt::xlabel("Iterations");
             //plt::subplot(2, 2, 4);
 
-            //plt::named_plot("momentum", momentum_list, "blue");
             //if (iter == 0) { plt::legend({{"loc", "upper right"}}); }
             //plt::grid(true);
             //plt::xlabel("Iterations");
