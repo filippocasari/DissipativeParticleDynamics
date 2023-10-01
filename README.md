@@ -15,8 +15,19 @@ where delta_t is a double (seconds)
 
 ![alt text](images/ex_b.png "test B")
 
+
+
+https://github.com/filippocasari/DissipativeParticleDynamics/assets/49616196/4743c911-e781-4c7e-a396-4a0b58a42c07
+
+
+
+
 ### Ex c)
 ![alt text](images/ex_c.png "test C")
+
+
+
+
 
 
 __NOTE__: sometimes, the program does not run properly because matplotlibcpp is not maintained anymore, and crashes. However, if this happened, you may try several times. 
